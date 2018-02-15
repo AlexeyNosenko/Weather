@@ -8,14 +8,14 @@
 
 import UIKit
 
-private let reuseIdentifier = "Cell"
+private let reuseIdentifier = "cell"
 
 class CityCollectionViewController: UICollectionViewController {
     
     var city = ""
-    private var temp_list: [Double] = []
-    private var time_list: [String] = []
-    private var icon_list: [String] = []
+    private var tempList: [Double] = []
+    private var timeList: [String] = []
+    private var iconList: [String] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,27 +25,27 @@ class CityCollectionViewController: UICollectionViewController {
     
     func loadViewData(){
         let loader = LoadData()
-        let cityWeather = loader.CityLoadDB(city)
+        let cityWeather = loader.cityLoadDB(city)
         for c in cityWeather{
             print("loadDetail = \(c)")
             for w in c.templst{
-                temp_list.append(w.t)
-                time_list.append(w.t_time)
-                icon_list.append(w.t_icon)
+                tempList.append(w.t)
+                timeList.append(w.tTime)
+                iconList.append(w.tIcon)
             }
         }
     }
     
     // MARK: UICollectionViewDataSource
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return temp_list.count
+        return tempList.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "detail", for: indexPath)
-        (cell.viewWithTag(1) as! UILabel).text = String(temp_list[indexPath.row])
-        (cell.viewWithTag(2) as! UILabel).text = String(time_list[indexPath.row])
-        (cell.viewWithTag(3) as! UIImageView).image = UIImage.init(named: String(icon_list[indexPath.row]))
+        (cell.viewWithTag(1) as! UILabel).text = String(tempList[indexPath.row])
+        (cell.viewWithTag(2) as! UILabel).text = String(timeList[indexPath.row])
+        (cell.viewWithTag(3) as! UIImageView).image = UIImage.init(named: String(iconList[indexPath.row]))
         return cell
     }
     

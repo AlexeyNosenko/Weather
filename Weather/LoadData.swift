@@ -14,37 +14,72 @@ import SwiftyJSON
 class LoadData {
     let realm = try! Realm()
     
-    func LoadJSON(_ city: String){
-        let Online_w = City()
-        let file = FilePlist()
-        let url = "http://api.openweathermap.org/data/2.5/forecast"
-        let param = ["q": city, "units": "metric", "appid": "cc43de317c7b45042d6dd7d09ee12d74"]
+    func createURLWithComponents(cityName name: String) -> URL? {
+        let param = ParamURL.init(q: name, units: "metric")
+        let urlComponents = NSURLComponents()
         
-        print("LoadJSON")
-        Alamofire.request(url, method: .get, parameters: param).validate().responseJSON { response in
-            print(response.result)
+        urlComponents.scheme = "http"
+        urlComponents.host = "api.openweathermap.org"
+        urlComponents.path = "/data/2.5/forecast"
+        
+        urlComponents.queryItems = [URLQueryItem.init(name: "q", value: param.q),
+                                    URLQueryItem.init(name: "units", value: param.units),
+                                    URLQueryItem.init(name: "appid", value: param.appid)]
+        return urlComponents.url
+    }
+    
+    func loadJSONURlSession(cityName name: String){
+        let url = createURLWithComponents(cityName: name)
+        if let url = url {
+            var request = URLRequest.init(url: url)
+            request.httpMethod = "GET"
+            request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        
+            let task = URLSession.shared.dataTask(with: request, completionHandler: {[weak self] (data, _, error) in
+                if error == nil,
+                    let data = data{
+                    let value = String.init(data: data, encoding: String.Encoding.utf8)
+                    self?.save(jsonValue: value as Any)
+                } else {
+                    print(error.debugDescription)
+                }
+            })
+            task.resume()
+        }
+    }
+    
+    func save(jsonValue: Any){
+        let json = JSON(jsonValue)
+        let city = City()
+        let file = FilePlist()
+        city.cityName = json["city"]["name"].stringValue
+        
+        for (_, subJson):(String, JSON) in json["list"] {
+            let ot = Temp()
+            ot.t = subJson["main"]["temp"].doubleValue
+            //  print(ot.t)
+            ot.tTime = subJson["dt_txt"].stringValue
+            ot.tIcon = subJson["weather"][0]["icon"].stringValue
+            city.templst.append(ot)
+            
+        }
+        try! self.realm.write {
+            self.realm.add(city)
+            print("add")
+        }
+        file.flag = true
+    }
+    
+    func loadJSONAlamofire(cityName name: String){
+        let paramUrl = ParamURL.init(q: name, units: "metric")
+        let param = ["q": paramUrl.q, "units": paramUrl.units, "appid": paramUrl.appid]
+        
+        print("LoadJSONAlamofire")
+        Alamofire.request(paramUrl.url, method: .get, parameters: param).validate().responseJSON { response in
             switch response.result {
             case .success:
                 if let value = response.result.value {
-                    let json = JSON(value)
-                    Online_w.City_name = json["city"]["name"].stringValue
-                    //print(json["city"]["name"].stringValue)
-                    //print("JSON: \(json)")
-                    
-                    for (_,subJson):(String, JSON) in json["list"] {
-                        let ot = Temp()
-                        ot.t = subJson["main"]["temp"].doubleValue
-                        //  print(ot.t)
-                        ot.t_time = subJson["dt_txt"].stringValue
-                        ot.t_icon = subJson["weather"][0]["icon"].stringValue
-                        Online_w.templst.append(ot)
-                        
-                    }
-                    try! self.realm.write {
-                        self.realm.add(Online_w)
-                        print("add")
-                    }
-                    file.flag = true
+                    self.save(jsonValue: value)
                 }
             case .failure(let error):
                 print(error)
@@ -53,25 +88,32 @@ class LoadData {
     }
     
     func LoadDB() -> [String] {
-        var City_list: [String] = []
-        let last_data = self.realm.objects(City.self)
-        for  i  in 0..<last_data.count {
-            City_list.append(last_data[i].City_name)
+        var cities: [String] = []
+        let lastData = self.realm.objects(City.self)
+        for  i  in 0..<lastData.count {
+            cities.append(lastData[i].cityName)
         }
-        return City_list
+        return cities
     }
     
     private func getCity(_ city: String) -> Results<City>{
-        return self.realm.objects(City.self).filter("City_name BEGINSWITH %@", city)
+        return self.realm.objects(City.self).filter("cityName BEGINSWITH %@", city)
     }
     
-    func CityLoadDB(_ city: String) -> Results<City> {
+    func cityLoadDB(_ city: String) -> Results<City> {
         return getCity(city)
     }
     
-    func CityRemoveDB(_ city: String) {
+    func cityRemoveDB(_ city: String) {
         try! realm.write {
             realm.delete(getCity(city))
         }
     }
+}
+
+struct ParamURL{
+    var q: String
+    var units: String
+    let appid = "cc43de317c7b45042d6dd7d09ee12d74"
+    let url = "http://api.openweathermap.org/data/2.5/forecast"
 }

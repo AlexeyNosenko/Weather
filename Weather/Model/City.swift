@@ -10,10 +10,10 @@ import Foundation
 import RealmSwift
 
 class City: Object {
-  dynamic var City_name: String = ""
+  dynamic var cityName: String = ""
   var templst = List<Temp>()
   
   override static func primaryKey() -> String? {
-    return "City_name"
+    return "cityName"
   }
 }

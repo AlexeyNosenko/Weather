@@ -11,6 +11,6 @@ import RealmSwift
 
 class Temp: Object {
     dynamic var t: Double = 0
-    dynamic var t_time: String = ""
-    dynamic var t_icon: String = ""
+    dynamic var tTime: String = ""
+    dynamic var tIcon: String = ""
 }
